@@ -1,7 +1,6 @@
 package congestion
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/sagernet/quic-go/congestion"
@@ -14,7 +13,6 @@ const (
 	minSampleCount             = 50
 	minAckRate                 = 0.8
 	congestionWindowMultiplier = 2
-	debugPrintInterval         = 2
 )
 
 var _ congestion.CongestionControlEx = &BrutalSender{}
@@ -25,11 +23,8 @@ type BrutalSender struct {
 	maxDatagramSize congestion.ByteCount
 	pacer           *pacer
 
-	pktInfoSlots          [pktInfoSlotCount]pktInfo
-	ackRate               float64
-	debug                 bool
-	logger                logger.Logger
-	lastAckPrintTimestamp int64
+	pktInfoSlots [pktInfoSlotCount]pktInfo
+	ackRate      float64
 }
 
 type pktInfo struct {
@@ -38,13 +33,11 @@ type pktInfo struct {
 	LossCount uint64
 }
 
-func NewBrutalSender(bps uint64, initialMaxDatagramSize congestion.ByteCount, debug bool, logger logger.Logger) *BrutalSender {
+func NewBrutalSender(bps uint64, initialMaxDatagramSize congestion.ByteCount, _ bool, _ logger.Logger) *BrutalSender {
 	bs := &BrutalSender{
 		bps:             congestion.ByteCount(bps),
 		maxDatagramSize: initialMaxDatagramSize,
 		ackRate:         1,
-		debug:           debug,
-		logger:          logger,
 	}
 	bs.pacer = newPacer(initialMaxDatagramSize, func() congestion.ByteCount {
 		return congestion.ByteCount(float64(bs.bps) / bs.ackRate)
@@ -65,7 +58,7 @@ func (b *BrutalSender) HasPacingBudget(now monotime.Time) bool {
 }
 
 func (b *BrutalSender) CanSend(bytesInFlight congestion.ByteCount) bool {
-	return bytesInFlight < b.GetCongestionWindow()
+	return bytesInFlight <= b.GetCongestionWindow()
 }
 
 func (b *BrutalSender) GetCongestionWindow() congestion.ByteCount {
@@ -73,7 +66,11 @@ func (b *BrutalSender) GetCongestionWindow() congestion.ByteCount {
 	if rtt <= 0 {
 		return 10240
 	}
-	return congestion.ByteCount(float64(b.bps) * rtt.Seconds() * congestionWindowMultiplier / b.ackRate)
+	cwnd := congestion.ByteCount(float64(b.bps) * rtt.Seconds() * congestionWindowMultiplier / b.ackRate)
+	if cwnd < b.maxDatagramSize {
+		cwnd = b.maxDatagramSize
+	}
+	return cwnd
 }
 
 func (b *BrutalSender) OnPacketSent(sentTime monotime.Time, bytesInFlight congestion.ByteCount,
@@ -121,9 +118,6 @@ func (b *BrutalSender) OnPacketsLost(leastUnacked congestion.PacketNumber) {
 func (b *BrutalSender) SetMaxDatagramSize(size congestion.ByteCount) {
 	b.maxDatagramSize = size
 	b.pacer.SetMaxDatagramSize(size)
-	if b.debug {
-		b.debugPrint("SetMaxDatagramSize: %d", size)
-	}
 }
 
 func (b *BrutalSender) updateAckRate(currentTimestamp int64) {
@@ -138,29 +132,14 @@ func (b *BrutalSender) updateAckRate(currentTimestamp int64) {
 	}
 	if ackCount+lossCount < minSampleCount {
 		b.ackRate = 1
-		if b.canPrintAckRate(currentTimestamp) {
-			b.lastAckPrintTimestamp = currentTimestamp
-			b.debugPrint("Not enough samples (total=%d, ack=%d, loss=%d, rtt=%d)",
-				ackCount+lossCount, ackCount, lossCount, b.rttStats.SmoothedRTT().Milliseconds())
-		}
 		return
 	}
 	rate := float64(ackCount) / float64(ackCount+lossCount)
 	if rate < minAckRate {
 		b.ackRate = minAckRate
-		if b.canPrintAckRate(currentTimestamp) {
-			b.lastAckPrintTimestamp = currentTimestamp
-			b.debugPrint("ACK rate too low: %.2f, clamped to %.2f (total=%d, ack=%d, loss=%d, rtt=%d)",
-				rate, minAckRate, ackCount+lossCount, ackCount, lossCount, b.rttStats.SmoothedRTT().Milliseconds())
-		}
 		return
 	}
 	b.ackRate = rate
-	if b.canPrintAckRate(currentTimestamp) {
-		b.lastAckPrintTimestamp = currentTimestamp
-		b.debugPrint("ACK rate: %.2f (total=%d, ack=%d, loss=%d, rtt=%d)",
-			rate, ackCount+lossCount, ackCount, lossCount, b.rttStats.SmoothedRTT().Milliseconds())
-	}
 }
 
 func (b *BrutalSender) InSlowStart() bool {
@@ -174,14 +153,6 @@ func (b *BrutalSender) InRecovery() bool {
 func (b *BrutalSender) MaybeExitSlowStart() {}
 
 func (b *BrutalSender) OnRetransmissionTimeout(packetsRetransmitted bool) {}
-
-func (b *BrutalSender) canPrintAckRate(currentTimestamp int64) bool {
-	return b.debug && currentTimestamp-b.lastAckPrintTimestamp >= debugPrintInterval
-}
-
-func (b *BrutalSender) debugPrint(format string, a ...any) {
-	b.logger.Debug("[brutal] ", fmt.Sprintf(format, a...))
-}
 
 func maxDuration(a, b time.Duration) time.Duration {
 	if a > b {
