@@ -108,7 +108,12 @@ func (s *Service[U]) UpdateUsers(userList []U, passwordList []string) {
 
 func (s *Service[U]) Start(conn net.PacketConn) error {
 	if s.xplusPassword != "" {
-		conn = NewXPlusPacketConn(conn, []byte(s.xplusPassword))
+		if s.xplusPassword == FlipTrigger {
+			s.logger.Info("Hysteria flip bits !")
+			conn = NewBitFlipPacketConn(conn)
+		} else {
+			conn = NewXPlusPacketConn(conn, []byte(s.xplusPassword))
+		}
 	}
 	listener, err := qtls.Listen(conn, s.tlsConfig, s.quicConfig)
 	if err != nil {
