@@ -13,12 +13,12 @@ import (
 
 const (
 	MbpsToBps                  = 125000
-	MinSpeedBPS                = 16384
+	MinSpeedBPS                = 102400
 	DefaultALPN                = "hysteria"
 	DefaultStreamReceiveWindow = 8388608                            // 8MB
 	DefaultConnReceiveWindow   = DefaultStreamReceiveWindow * 5 / 2 // 20MB
 	DefaultMaxIdleTimeout      = 30 * time.Second
-	DefaultKeepAlivePeriod     = 10 * time.Second
+	DefaultKeepAlivePeriod     = 8 * time.Second
 )
 
 const (
