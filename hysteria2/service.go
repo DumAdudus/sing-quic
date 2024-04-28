@@ -84,7 +84,7 @@ func NewService[U comparable](options ServiceOptions) (*Service[U], error) {
 	quicConfig := &quic.Config{
 		DisablePathMTUDiscovery:        !(runtime.GOOS == "windows" || runtime.GOOS == "linux" || runtime.GOOS == "android" || runtime.GOOS == "darwin"),
 		EnableDatagrams:                !options.UDPDisabled,
-		MaxIncomingStreams:             1 << 60,
+		MaxIncomingStreams:             1 << 10,
 		InitialStreamReceiveWindow:     hysteria.DefaultStreamReceiveWindow,
 		MaxStreamReceiveWindow:         hysteria.DefaultStreamReceiveWindow,
 		InitialConnectionReceiveWindow: hysteria.DefaultConnReceiveWindow,
