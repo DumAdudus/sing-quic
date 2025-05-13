@@ -30,6 +30,7 @@ type ClientOptions struct {
 	BrutalDebug   bool
 	ServerAddress M.Socksaddr
 	ServerPorts   []string
+	IPv6Range     []string
 	HopInterval   time.Duration
 	SendBPS       uint64
 	ReceiveBPS    uint64
@@ -47,6 +48,7 @@ type Client struct {
 	brutalDebug   bool
 	serverAddr    M.Socksaddr
 	serverPorts   []uint16
+	ipv6Range     []*net.IPNet
 	hopInterval   time.Duration
 	sendBPS       uint64
 	receiveBPS    uint64
@@ -94,6 +96,16 @@ func NewClient(options ClientOptions) (*Client, error) {
 			return nil, err
 		}
 	}
+	var ipv6Range []*net.IPNet
+	if len(options.IPv6Range) > 0 {
+		for _, r := range options.IPv6Range {
+			_, ipv6Net, err := net.ParseCIDR(r)
+			if err != nil {
+				return nil, err
+			}
+			ipv6Range = append(ipv6Range, ipv6Net)
+		}
+	}
 	return &Client{
 		ctx:           options.Context,
 		dialer:        options.Dialer,
@@ -101,6 +113,7 @@ func NewClient(options ClientOptions) (*Client, error) {
 		brutalDebug:   options.BrutalDebug,
 		serverAddr:    options.ServerAddress,
 		serverPorts:   serverPorts,
+		ipv6Range:     ipv6Range,
 		hopInterval:   options.HopInterval,
 		sendBPS:       options.SendBPS,
 		receiveBPS:    options.ReceiveBPS,
@@ -247,7 +260,7 @@ func (c *Client) offerNew(ctx context.Context) (*clientQUICConnection, error) {
 		rawConn net.Conn
 		err     error
 	)
-	if len(c.serverPorts) == 0 {
+	if len(c.serverPorts) == 0 && len(c.ipv6Range) == 0 {
 		rawConn, err = dialFunc(c.serverAddr)
 		if err != nil {
 			return nil, err
@@ -256,7 +269,7 @@ func (c *Client) offerNew(ctx context.Context) (*clientQUICConnection, error) {
 			qtls.SetDesiredBufferSizes(rawConn)
 		}
 	} else {
-		rawConn, err = NewHopConn(dialFunc, c.serverAddr, c.serverPorts, c.hopInterval, 0)
+		rawConn, err = NewHopConn(dialFunc, c.serverAddr, c.serverPorts, c.ipv6Range, c.hopInterval, 0)
 		if err != nil {
 			return nil, err
 		}

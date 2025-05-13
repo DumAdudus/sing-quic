@@ -1,9 +1,12 @@
 package hysteria
 
 import (
+	crand "crypto/rand"
 	"errors"
 	"math/rand"
 	"net"
+	"net/netip"
+	"slices"
 	"sync"
 	"time"
 
@@ -23,6 +26,7 @@ type HopConn struct {
 	dialFunc    func(M.Socksaddr) (net.Conn, error)
 	destination M.Socksaddr
 	ports       []uint16
+	ipv6Range   []*net.IPNet
 	interval    time.Duration
 	intervalMax time.Duration
 	access      sync.Mutex
@@ -39,6 +43,7 @@ func NewHopConn(
 	dialFunc func(M.Socksaddr) (net.Conn, error),
 	destination M.Socksaddr,
 	ports []uint16,
+	ipv6Range []*net.IPNet,
 	interval time.Duration,
 	intervalMax time.Duration,
 ) (*HopConn, error) {
@@ -59,6 +64,7 @@ func NewHopConn(
 		dialFunc:    dialFunc,
 		destination: destination,
 		ports:       ports,
+		ipv6Range:   ipv6Range,
 		interval:    interval,
 		intervalMax: intervalMax,
 		packetChan:  make(chan *buf.Buffer, packetQueueSize),
@@ -77,11 +83,29 @@ func NewHopConn(
 }
 
 func (c *HopConn) nextAddr() M.Socksaddr {
-	c.portIndex = rand.Intn(len(c.ports))
+	port := c.destination.Port
+	addr := c.destination.Addr
+
+	if l := len(c.ports); l > 0 {
+		c.portIndex = rand.Intn(l)
+		port = c.ports[c.portIndex]
+	}
+
+	if l := len(c.ipv6Range); l > 0 {
+		pick := c.ipv6Range[rand.Intn(l)]
+		random := make([]byte, net.IPv6len)
+		crand.Read(random)
+		randAddr := slices.Clone(net.IPv6zero)
+		for i := range net.IPv6len {
+			randAddr[i] = ^pick.Mask[i]&random[i] | pick.IP[i]
+		}
+		addr, _ = netip.ParseAddr(randAddr.String())
+	}
+
 	return M.Socksaddr{
-		Addr: c.destination.Addr,
+		Addr: addr,
 		Fqdn: c.destination.Fqdn,
-		Port: c.ports[c.portIndex],
+		Port: port,
 	}
 }
 
