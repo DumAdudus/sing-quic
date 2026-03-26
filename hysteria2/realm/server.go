@@ -145,10 +145,7 @@ func (s *Server) run(ctx context.Context) {
 		<-eventStreamDone
 		close(s.done)
 	}()
-	heartbeatInterval := time.Duration(s.ttl/2) * time.Second
-	if heartbeatInterval < time.Second {
-		heartbeatInterval = time.Second
-	}
+	heartbeatInterval := max(time.Duration(s.ttl/2)*time.Second, time.Second)
 	heartbeatTimer := time.NewTimer(heartbeatInterval)
 	defer heartbeatTimer.Stop()
 	for {
@@ -194,10 +191,7 @@ func (s *Server) runEventStream(ctx context.Context) {
 		s.options.Logger.Info("event stream disconnected, reconnecting in ", sseBackoff)
 		select {
 		case <-time.After(sseBackoff):
-			sseBackoff = sseBackoff * 2
-			if sseBackoff > sseBackoffMax {
-				sseBackoff = sseBackoffMax
-			}
+			sseBackoff = min(sseBackoff*2, sseBackoffMax)
 		case <-ctx.Done():
 			return
 		}

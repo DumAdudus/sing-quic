@@ -349,10 +349,7 @@ func (m *BBRv2NetworkModel) OnCongestionEventStart(
 	congestionEvent.BytesAcked = m.TotalBytesAcked() - priorBytesAcked
 	congestionEvent.BytesLost = m.TotalBytesLost() - priorBytesLost
 
-	bytesInFlight := congestionEvent.PriorBytesInFlight - congestionEvent.BytesAcked - congestionEvent.BytesLost
-	if bytesInFlight < 0 {
-		bytesInFlight = 0
-	}
+	bytesInFlight := max(congestionEvent.PriorBytesInFlight-congestionEvent.BytesAcked-congestionEvent.BytesLost, 0)
 	congestionEvent.BytesInFlight = bytesInFlight
 
 	if congestionEvent.BytesLost > 0 {
@@ -429,11 +426,7 @@ func (m *BBRv2NetworkModel) adaptLowerBounds(congestionEvent *BBRv2CongestionEve
 			}
 
 			inflightLoNew := congestion.ByteCount(float64(m.inflightLo) * (1.0 - params.Beta))
-			if m.inflightLatest > inflightLoNew {
-				m.inflightLo = m.inflightLatest
-			} else {
-				m.inflightLo = inflightLoNew
-			}
+			m.inflightLo = max(m.inflightLatest, inflightLoNew)
 		}
 		return
 	}
@@ -473,10 +466,7 @@ func (m *BBRv2NetworkModel) adaptLowerBounds(congestionEvent *BBRv2CongestionEve
 
 	case BwLoModeInflightReduction:
 		// Use a max of BDP and inflight to avoid starving app-limited flows.
-		effectiveInflight := m.BDP0()
-		if congestionEvent.PriorBytesInFlight > effectiveInflight {
-			effectiveInflight = congestionEvent.PriorBytesInFlight
-		}
+		effectiveInflight := max(congestionEvent.PriorBytesInFlight, m.BDP0())
 		factor := float64(effectiveInflight-congestionEvent.BytesLost) / float64(effectiveInflight)
 		if factor < 0 {
 			factor = 0

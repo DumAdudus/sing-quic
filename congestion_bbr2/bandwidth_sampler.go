@@ -516,10 +516,7 @@ func (s *BandwidthSampler) OnCongestionEvent(
 		maxBandwidth = eventSample.SampleMaxBandwidth
 	}
 
-	bandwidthEstimate := maxBandwidth
-	if bandwidthEstimate > estBandwidthUpperBound {
-		bandwidthEstimate = estBandwidthUpperBound
-	}
+	bandwidthEstimate := min(maxBandwidth, estBandwidthUpperBound)
 	if bandwidthEstimate == 0 {
 		bandwidthEstimate = estBandwidthUpperBound
 	}

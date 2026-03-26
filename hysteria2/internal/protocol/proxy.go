@@ -131,10 +131,7 @@ func ReadTCPResponse(r io.Reader) (ok bool, message string, err error) {
 func WriteTCPResponse(ok bool, msg string, payload []byte) *buf.Buffer {
 	padding := tcpResponsePadding.String()
 	paddingLen := len(padding)
-	msgLen := len(msg)
-	if msgLen > MaxMessageLength {
-		msgLen = MaxMessageLength
-	}
+	msgLen := min(len(msg), MaxMessageLength)
 	sz := 1 + int(quicvarint.Len(uint64(msgLen))) + msgLen +
 		int(quicvarint.Len(uint64(paddingLen))) + paddingLen
 	buffer := buf.NewSize(sz + len(payload))

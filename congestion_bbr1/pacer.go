@@ -45,10 +45,7 @@ func (p *Pacer) Budget(now monotime.Time) congestion.ByteCount {
 		return p.maxBurstSize()
 	}
 
-	budget := p.budgetAtLastSent + p.bytesForInterval(now.Sub(p.lastSentTime))
-	if budget > p.maxBurstSize() {
-		budget = p.maxBurstSize()
-	}
+	budget := min(p.budgetAtLastSent+p.bytesForInterval(now.Sub(p.lastSentTime)), p.maxBurstSize())
 	return budget
 }
 

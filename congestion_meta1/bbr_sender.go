@@ -568,7 +568,7 @@ func (b *bbrSender) UpdateBandwidthAndMinRtt(now monotime.Time, number congestio
 
 	b.minRttSinceLastProbeRtt = minRtt(b.minRttSinceLastProbeRtt, sampleMinRtt)
 	// Do not expire min_rtt if none was ever available.
-	minRttExpired := b.minRtt > 0 && (now.After(b.minRttTimestamp.Add(MinRttExpiry)))
+	minRttExpired := b.minRtt > 0 && now.After(b.minRttTimestamp.Add(MinRttExpiry))
 	if minRttExpired || sampleMinRtt < b.minRtt || b.minRtt == 0 {
 		if minRttExpired && b.ShouldExtendMinRttExpiry() {
 			minRttExpired = false
@@ -655,7 +655,7 @@ func (b *bbrSender) UpdateAckAggregationBytes(ackTime monotime.Time, ackedBytes 
 	// Compute how many bytes are expected to be delivered, assuming max bandwidth
 	// is correct.
 	expectedAckedBytes := congestion.ByteCount(b.maxBandwidth.GetBest()) *
-		congestion.ByteCount((ackTime.Sub(b.aggregationEpochStartTime)))
+		congestion.ByteCount(ackTime.Sub(b.aggregationEpochStartTime))
 	// Reset the current aggregation epoch as soon as the ack arrival rate is less
 	// than or equal to the max bandwidth.
 	if b.aggregationEpochBytes <= expectedAckedBytes {

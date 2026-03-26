@@ -69,10 +69,7 @@ func (p *ProbeBwState) GetCwndLimits(model *BBRv2NetworkModel, cycle *Cycle, par
 		return NoGreaterThan(int(model.InflightLo()))
 	}
 
-	limit := model.InflightLo()
-	if model.InflightHi() < limit {
-		limit = model.InflightHi()
-	}
+	limit := min(model.InflightHi(), model.InflightLo())
 	return NoGreaterThan(int(limit))
 }
 
@@ -418,10 +415,7 @@ func (p *ProbeBwState) maybeAdaptUpperBounds(
 			if !sendState.IsAppLimited || params.MaxProbeUpQueueRounds > 0 {
 				inflightTarget := congestion.ByteCount(float64(targetBytesInflight) * (1.0 - params.Beta))
 
-				newInflightHi := inflightAtSend
-				if inflightTarget > newInflightHi {
-					newInflightHi = inflightTarget
-				}
+				newInflightHi := max(inflightTarget, inflightAtSend)
 
 				if params.LimitInflightHiByMaxDelivered {
 					if model.MaxBytesDeliveredInRound() > newInflightHi {
@@ -508,10 +502,7 @@ func (p *ProbeBwState) raiseInflightHighSlope(cycle *Cycle, cwnd congestion.Byte
 	if cycle.ProbeUpRounds < 30 {
 		cycle.ProbeUpRounds++
 	}
-	probeUpBytes := int(cwnd) / growthThisRound
-	if probeUpBytes < defaultMSS {
-		probeUpBytes = defaultMSS
-	}
+	probeUpBytes := max(int(cwnd)/growthThisRound, defaultMSS)
 	cycle.ProbeUpBytes = &probeUpBytes
 }
 

@@ -113,11 +113,7 @@ func (p *pacer) TimeUntilSend() monotime.Time {
 	// waitTime = needed / bytesPerSecond (in seconds)
 	// Convert to nanoseconds for Duration
 	waitNs := uint64(needed) * uint64(time.Second) / bytesPerSecond
-	waitDuration := time.Duration(waitNs)
-
-	if waitDuration < minPacingDelay {
-		waitDuration = minPacingDelay
-	}
+	waitDuration := max(time.Duration(waitNs), minPacingDelay)
 
 	return p.lastSentTime.Add(waitDuration)
 }
@@ -125,18 +121,4 @@ func (p *pacer) TimeUntilSend() monotime.Time {
 // SetMaxDatagramSize updates the maximum datagram size.
 func (p *pacer) SetMaxDatagramSize(s congestion.ByteCount) {
 	p.maxDatagramSize = s
-}
-
-func min(a, b congestion.ByteCount) congestion.ByteCount {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func max(a, b congestion.ByteCount) congestion.ByteCount {
-	if a > b {
-		return a
-	}
-	return b
 }

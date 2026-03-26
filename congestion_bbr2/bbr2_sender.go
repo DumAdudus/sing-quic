@@ -492,11 +492,7 @@ func (s *BBR2Sender) updateCongestionWindow(bytesAcked congestion.ByteCount) {
 	if s.model.FullBandwidthReached() {
 		targetCwnd += s.model.MaxAckHeight()
 		newCwnd := priorCwnd + bytesAcked
-		if targetCwnd < newCwnd {
-			s.cwnd = targetCwnd
-		} else {
-			s.cwnd = newCwnd
-		}
+		s.cwnd = min(targetCwnd, newCwnd)
 	} else if priorCwnd < targetCwnd || priorCwnd < 2*s.initialCwnd {
 		s.cwnd = priorCwnd + bytesAcked
 	}

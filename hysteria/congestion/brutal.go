@@ -25,8 +25,8 @@ type BrutalSender struct {
 	maxDatagramSize congestion.ByteCount
 	pacer           *pacer
 
-	pktInfoSlots          [pktInfoSlotCount]pktInfo
-	ackRate               float64
+	pktInfoSlots [pktInfoSlotCount]pktInfo
+	ackRate      float64
 }
 
 type pktInfo struct {
@@ -68,10 +68,7 @@ func (b *BrutalSender) GetCongestionWindow() congestion.ByteCount {
 	if rtt <= 0 {
 		return 10240
 	}
-	cwnd := congestion.ByteCount(float64(b.bps) * rtt.Seconds() * congestionWindowMultiplier / b.ackRate)
-	if cwnd < b.maxDatagramSize {
-		cwnd = b.maxDatagramSize
-	}
+	cwnd := max(congestion.ByteCount(float64(b.bps)*rtt.Seconds()*congestionWindowMultiplier/b.ackRate), b.maxDatagramSize)
 	return cwnd
 }
 
@@ -148,8 +145,8 @@ func (b *BrutalSender) MaybeExitSlowStart() {}
 func (b *BrutalSender) OnRetransmissionTimeout(packetsRetransmitted bool) {}
 
 func maxDuration(a, b time.Duration) time.Duration {
-    if a > b {
-        return a
-    }
-    return b
+	if a > b {
+		return a
+	}
+	return b
 }
