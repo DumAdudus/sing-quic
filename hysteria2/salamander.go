@@ -25,11 +25,9 @@ func NewSalamanderConn(conn net.PacketConn, password []byte) net.PacketConn {
 	writer, isVectorised := bufio.CreateVectorisedPacketWriter(conn)
 	if isVectorised {
 		return &VectorisedSalamanderPacketConn{
-			SalamanderPacketConn: SalamanderPacketConn{
-				PacketConn: conn,
-				password:   password[:len(password):len(password)],
-			},
-			writer: writer,
+			PacketConn: conn,
+			password:   password[:len(password):len(password)],
+			writer:     writer,
 		}
 	} else {
 		return &SalamanderPacketConn{

@@ -34,25 +34,20 @@ func (e *quicError) Is(target error) bool {
 	}
 	switch target {
 	case net.ErrClosed:
-		var streamErr *quic.StreamError
-		if errors.As(e.err, &streamErr) {
+		if streamErr, ok := errors.AsType[*quic.StreamError](e.err); ok {
 			return !streamErr.Remote && streamErr.ErrorCode == 0
 		}
-		var transportErr *quic.TransportError
-		if errors.As(e.err, &transportErr) {
+		if transportErr, ok := errors.AsType[*quic.TransportError](e.err); ok {
 			return transportErr.ErrorCode == quic.NoError
 		}
-		var appErr *quic.ApplicationError
-		if errors.As(e.err, &appErr) {
+		if appErr, ok := errors.AsType[*quic.ApplicationError](e.err); ok {
 			return appErr.Remote && appErr.ErrorCode == 0
 		}
-		var h3Err *http3.Error
-		if errors.As(e.err, &h3Err) {
+		if h3Err, ok := errors.AsType[*http3.Error](e.err); ok {
 			return h3Err.ErrorCode == http3.ErrCodeNoError || h3Err.ErrorCode == http3.ErrCodeRequestCanceled
 		}
 	case io.EOF:
-		var streamErr *quic.StreamError
-		if errors.As(e.err, &streamErr) {
+		if streamErr, ok := errors.AsType[*quic.StreamError](e.err); ok {
 			return !streamErr.Remote && streamErr.ErrorCode == 0
 		}
 	}

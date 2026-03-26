@@ -20,12 +20,10 @@ func NewXPlusPacketConn(conn net.PacketConn, key []byte) net.PacketConn {
 	vectorisedWriter, isVectorised := bufio.CreateVectorisedPacketWriter(conn)
 	if isVectorised {
 		return &VectorisedXPlusConn{
-			XPlusPacketConn: XPlusPacketConn{
-				PacketConn: conn,
-				key:        key[:len(key):len(key)],
-				rand:       rand.New(rand.NewSource(time.Now().UnixNano())),
-			},
-			writer: vectorisedWriter,
+			PacketConn: conn,
+			key:        key[:len(key):len(key)],
+			rand:       rand.New(rand.NewSource(time.Now().UnixNano())),
+			writer:     vectorisedWriter,
 		}
 	} else {
 		return &XPlusPacketConn{
