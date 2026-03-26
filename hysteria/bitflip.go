@@ -15,10 +15,8 @@ func NewBitFlipPacketConn(conn net.PacketConn) net.PacketConn {
 	vectorisedWriter, isVectorised := bufio.CreateVectorisedPacketWriter(conn)
 	if isVectorised {
 		return &VectorisedBitFlipConn{
-			BitFlipPacketConn: BitFlipPacketConn{
-				PacketConn: conn,
-			},
-			writer: vectorisedWriter,
+			PacketConn: conn,
+			writer:     vectorisedWriter,
 		}
 	} else {
 		return &BitFlipPacketConn{
