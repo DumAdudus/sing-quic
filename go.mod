@@ -1,15 +1,15 @@
 module github.com/sagernet/sing-quic
 
-go 1.25.0
+go 1.27
 
 require (
 	github.com/gofrs/uuid/v5 v5.5.1
 	github.com/libp2p/go-nat v1.0.1-0.20250821073202-01afc089f138
 	github.com/sagernet/quic-go v0.61.0-sing-box-mod.6
 	github.com/sagernet/sing v0.9.0-beta.4
-	golang.org/x/crypto v0.54.0
-	golang.org/x/exp v0.0.0-20250911091902-df9299821621
-	golang.org/x/sync v0.22.0
+	golang.org/x/crypto v0.57.0
+	golang.org/x/exp v0.0.0-20260908205506-85c1c2202aba
+	golang.org/x/sync v0.23.0
 )
 
 require (
@@ -22,7 +22,7 @@ require (
 	github.com/libp2p/go-netroute v0.2.1 // indirect
 	github.com/metacubex/utls v1.8.7 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
-	golang.org/x/net v0.56.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/net v0.58.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
 )

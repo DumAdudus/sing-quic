@@ -426,16 +426,14 @@ func (c *Client) realmOpenFamilies(ctx context.Context) ([]*realmFamilyConn, err
 	listenErrs := make([]error, len(specs))
 	var wg sync.WaitGroup
 	for i, spec := range specs {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			conn, listenErr := c.dialer.ListenPacket(ctx, spec.addr)
 			if listenErr != nil {
 				listenErrs[i] = E.Cause(listenErr, spec.family)
 				return
 			}
 			conns[i] = &realmFamilyConn{family: spec.family, ipv4: spec.ipv4, conn: conn}
-		}()
+		})
 	}
 	wg.Wait()
 	var families []*realmFamilyConn
@@ -476,9 +474,7 @@ func (c *Client) realmDiscoverFamilies(ctx context.Context, families []*realmFam
 	results := make([]discoverResult, len(families))
 	var wg sync.WaitGroup
 	for i, family := range families {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			servers := make([]netip.AddrPort, 0, len(stunServers))
 			for _, server := range stunServers {
 				if server.Addr().Is4() == family.ipv4 {
@@ -487,7 +483,7 @@ func (c *Client) realmDiscoverFamilies(ctx context.Context, families []*realmFam
 			}
 			addrs, discoverErr := realm.Discover(ctx, family.conn, servers)
 			results[i] = discoverResult{addrs: addrs, err: discoverErr}
-		}()
+		})
 	}
 	wg.Wait()
 	var surviving []*realmFamilyConn

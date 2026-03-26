@@ -82,7 +82,7 @@ func (g *GeckoPacketConn) writeFragmented(p []byte, addr net.Addr) (int, error) 
 	chunks := geckoMinChunks + rand2.IntN(geckoMaxChunks-geckoMinChunks+1)
 	chunkSize := len(p) / chunks
 	msgID := uint8(g.msgIDCounter.Add(1))
-	for i := 0; i < chunks; i++ {
+	for i := range chunks {
 		start := i * chunkSize
 		end := len(p)
 		if i < chunks-1 {
@@ -112,10 +112,7 @@ func (g *GeckoPacketConn) writeFragmented(p []byte, addr net.Addr) (int, error) 
 
 func (g *GeckoPacketConn) randomPadLen(chunkLen int) uint16 {
 	base := salamanderSaltLen + geckoHeaderLen + chunkLen
-	lo := g.minPacketSize
-	if base > lo {
-		lo = base
-	}
+	lo := max(base, g.minPacketSize)
 	if lo > g.maxPacketSize {
 		return 0
 	}
@@ -289,7 +286,7 @@ func (g *GeckoConn) writeFragmented(p []byte) (int, error) {
 	chunks := geckoMinChunks + rand2.IntN(geckoMaxChunks-geckoMinChunks+1)
 	chunkSize := len(p) / chunks
 	msgID := uint8(g.msgIDCounter.Add(1))
-	for i := 0; i < chunks; i++ {
+	for i := range chunks {
 		start := i * chunkSize
 		end := len(p)
 		if i < chunks-1 {
@@ -319,10 +316,7 @@ func (g *GeckoConn) writeFragmented(p []byte) (int, error) {
 
 func (g *GeckoConn) randomPadLen(chunkLen int) uint16 {
 	base := salamanderSaltLen + geckoHeaderLen + chunkLen
-	lo := g.minPacketSize
-	if base > lo {
-		lo = base
-	}
+	lo := max(base, g.minPacketSize)
 	if lo > g.maxPacketSize {
 		return 0
 	}
